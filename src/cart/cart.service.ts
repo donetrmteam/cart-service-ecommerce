@@ -1,23 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Cart, CartItem } from './interfaces/cart.interface';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 
 @Injectable()
 export class CartService {
-  private carts: Map<string, Cart> = new Map(); // userId -> Cart
+  private readonly logger = new Logger('CartService');
+  private carts: Map<string, Cart> = new Map(); 
 
   private calculateTotal(items: CartItem[]): number {
     return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }
 
   async getCart(userId: string): Promise<Cart> {
+    this.logger.log(`Getting cart for user ${userId}`);
     const cart = this.carts.get(userId);
+    
     if (!cart) {
+      this.logger.log(`No cart found for user ${userId}, creating new cart`);
       const newCart: Cart = { userId, items: [], totalAmount: 0 };
       this.carts.set(userId, newCart);
       return newCart;
     }
+
+    this.logger.log(`Cart found for user ${userId}: ${JSON.stringify(cart)}`);
     return cart;
   }
 

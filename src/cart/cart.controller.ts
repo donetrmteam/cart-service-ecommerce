@@ -1,4 +1,4 @@
-import { Controller, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, ParseUUIDPipe, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
@@ -6,11 +6,20 @@ import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 
 @Controller()
 export class CartController {
+  private readonly logger = new Logger('CartController');
+
   constructor(private readonly cartService: CartService) {}
 
   @MessagePattern({ cmd: 'get_cart' })
-  async getCart(@Payload('userId') userId: string) {
-    return this.cartService.getCart(userId);
+  async getCart(@Payload() data: { userId: string }) {
+    this.logger.log(`Received get cart request with data: ${JSON.stringify(data)}`);
+    if (!data || !data.userId) {
+      this.logger.error('Invalid request: userId is missing');
+      throw new Error('userId is required');
+    }
+    const cart = await this.cartService.getCart(data.userId);
+    this.logger.log(`Returning cart: ${JSON.stringify(cart)}`);
+    return cart;
   }
 
   @MessagePattern({ cmd: 'add_item_to_cart' })
